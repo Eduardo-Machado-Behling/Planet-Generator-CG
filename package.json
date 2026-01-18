@@ -1,0 +1,20 @@
+{
+  "name": "my-static-site",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "serve": "live-server public --entry-file=index.html",
+    "start": "concurrently \"npm run watch\" \"npm run serve\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "live-server": "^1.2.2",
+    "typescript": "^5.0.0"
+  },
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
