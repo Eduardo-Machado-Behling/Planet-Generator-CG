@@ -168,7 +168,7 @@ export class SquaredMatrix {
     return this;
   }
 
-  // will be equivalent to b * this;
+  // will be equivalent to `b * this`;
   transform(b: SquaredMatrix): SquaredMatrix {
     if (this.rows !== b.rows) {
       throw Error(`Dimension mismatch: ${this.rows} vs ${b.rows}`);

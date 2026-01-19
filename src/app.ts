@@ -6,6 +6,19 @@ import {Orbit} from './engine/objects/Orbit.js';
 import {Planet} from './engine/objects/Planet.js';
 import {Scene} from './engine/Scene.js';
 
+function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement, multiplier = 1) {
+  multiplier = multiplier || 1;
+  const width = canvas.clientWidth * multiplier | 0;
+  const height = canvas.clientHeight * multiplier | 0;
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+    return true;
+  }
+  return false;
+}
+
+
 async function main() {
   const engine = Engine.get();
   const gl = engine.gl;
@@ -50,15 +63,16 @@ async function main() {
     let dt = now - then;
     then = now;
 
-    webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-
-    const aspect = gl.canvas.width / gl.canvas.height;
-    if (aspect != cameraAspect) {
-      cameraAspect = aspect;
-      if (engine.camera)
-        engine.camera.proj =
-            SquaredMatrix.MakePerspective(fov, cameraAspect, near, far);
+    if (resizeCanvasToDisplaySize(engine.canvas)) {
+      const aspect = gl.canvas.width / gl.canvas.height;
+      if (aspect != cameraAspect) {
+        cameraAspect = aspect;
+        if (engine.camera)
+          engine.camera.proj =
+              SquaredMatrix.MakePerspective(fov, cameraAspect, near, far);
+      }
     }
+
 
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.clearColor(0.1, 0.1, 0.1, 1.0);

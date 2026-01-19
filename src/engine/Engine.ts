@@ -5,11 +5,17 @@ import {Scene} from './Scene.js';
 export class Engine {
   private context: WebGL2RenderingContext;
   private prog: WebGLProgram|null = null;
+  private _canvas: HTMLCanvasElement;
+
   camera: Camera|null = null;
   scene: Scene|null = null;
 
   get program(): WebGLProgram|null {
     return this.prog;
+  }
+
+  get canvas(): HTMLCanvasElement {
+    return this._canvas;
   }
 
   set program(prog: WebGLProgram) {
@@ -28,8 +34,14 @@ export class Engine {
   private static instance: Engine;
 
   private constructor() {
-    let gl = document.querySelector<HTMLCanvasElement>('#WebGLCanvas')
-                 ?.getContext('webgl2');
+    const id = '#WebGLCanvas'
+    let canvas = document.querySelector<HTMLCanvasElement>(id)
+    if (!canvas) {
+      throw Error(`Couldn't find canvas ${id}`);
+    }
+
+    this._canvas = canvas;
+    let gl = canvas.getContext('webgl2');
 
     if (!gl) {
       throw Error('Couldn\'t create WebGL2 context');
