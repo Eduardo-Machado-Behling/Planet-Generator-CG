@@ -5,13 +5,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimal TS Static Page</title>
+
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-    <h1>TypeScript without Bundlers</h1>
-    <div id="app"></div>
+    <canvas id="WebGLCanvas"></canvas>
 
     <script type="module" src="./js/app.js"></script>
+    <script src="https://webgl2fundamentals.org/webgl/resources/webgl-utils.js"></script>
+
+    <div class="inputContainer">
+        <div class="inputPadding"></div>
+        <div class="sliderContainer" id="sphereRes">
+            <p>Resulotion: </p>
+            <input class="Slider" type="range" min="4" max="1024" value="30" onchange="main()" />
+            <output>30</output>
+        </div>
+    </div>
+
+    <button onclick="main()">redraw</button>
 </body>
 
 </html>
