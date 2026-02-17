@@ -27,6 +27,6 @@ void main() {
 
   vOutUV = vec2(fraction, aV);
 
-  // Dummy position (required by GLSL)
+  
   gl_Position = vec4(0.0);
 }

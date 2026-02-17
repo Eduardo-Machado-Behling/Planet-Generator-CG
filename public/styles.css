@@ -1,35 +1,519 @@
+:root {
+	/* --- Color Palette --- */
+	--bg-app: #121212;
+	--bg-sidebar: #1e1e1e;
+	--bg-panel: #252525;
+	--bg-input: #121212;
+	--bg-item-static: #252526;
+	--bg-item-draggable: #2c2c2c;
+
+	/* --- Text & Borders --- */
+	--text-main: #e0e0e0;
+	--text-muted: #888;
+	--border: #3e3e3e;
+
+	/* --- Interaction --- */
+	--accent: #007acc;
+	--accent-hover: #006bb3;
+	--hover-overlay: rgba(255, 255, 255, 0.05);
+}
+
 html,
 body {
-    height: 100%;
-    margin: 0;
+	height: 100%;
+	margin: 0;
+	display: flex;
+	flex-direction: row;
+	overflow: hidden;
+	/* Prevent body scroll */
+	background-color: var(--bg-app);
+	color: var(--text-main);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* --- WebGL Canvas & Overlay --- */
 #WebGLCanvas {
-    width: 100%;
-    height: 100%;
-    display: block;
+	width: 100%;
+	height: 100%;
+	display: block;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 0;
+}
+
+.uiContainer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+	z-index: 10;
+}
+
+/* --- Sidebar Layout --- */
+.sidebar {
+	width: 450px;
+	height: 100vh;
+	background-color: var(--bg-sidebar);
+	border-right: 1px solid var(--border);
+	display: flex;
+	flex-direction: column;
+	pointer-events: auto;
+	box-sizing: border-box;
+	z-index: 20;
+
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden; /* Important: prevents content from bleeding out when shrinking */
+
+}
+
+.sidebar h2 {
+	margin: 0;
+	padding: 15px;
+	font-size: 1.1rem;
+	text-transform: uppercase;
+	letter-spacing: 1px;
+	background-color: var(--bg-sidebar);
+	border-bottom: 1px solid var(--border);
+}
+
+.stack-container {
+	min-height: 0;
+	flex-grow: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+/* --- Scrollbar Styling (Global) --- */
+::-webkit-scrollbar {
+	width: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #444;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #555;
+}
+
+/* --- Panels (Accordions) --- */
+.panel-item {
+	background-color: var(--bg-panel);
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	overflow: hidden;
+	transition: border-color 0.2s;
+	margin-bottom: 0;
+}
+
+.panel-item:hover {
+	border-color: #555;
+}
+
+.panel-item.static {
+	background-color: var(--bg-item-static);
+}
+
+.panel-header {
+	display: flex;
+	align-items: center;
+	padding: 10px;
+	cursor: pointer;
+	user-select: none;
+	background: rgba(255, 255, 255, 0.02);
+	transition: background 0.2s;
+}
+
+.panel-header:hover {
+	background: var(--hover-overlay);
+}
+
+.panel-title {
+	flex-grow: 1;
+	font-weight: 600;
+	font-size: 0.9rem;
+}
+
+.chevron {
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	transition: transform 0.2s ease;
+	margin-right: 8px;
+}
+
+/* Panel Content */
+.panel-content {
+	padding: 12px;
+	border-top: 1px solid var(--border);
+
+	/* Use Flex instead of Grid for better flow */
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+
+	background: rgba(0, 0, 0, 0.2);
+
+	/* Animation Props */
+	/* We use a large max-height to allow expansion while keeping the transition */
+	transition: max-height 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+
+	/* --- SCROLLING FIX --- */
+	max-height: min(20vh, 200px);
+	overflow-y: auto;
+	min-height: 0;
+	overflow-x: hidden;
+	opacity: 1;
+}
+
+.panel-content.collapsed {
+	display: flex !important;
+	/* Keep flex display for transition */
+	max-height: 0;
+	opacity: 0;
+	padding-top: 0;
+	padding-bottom: 0;
+	border-top: 1px solid transparent;
+
+	/* Hide overflow ONLY when collapsed to make the animation clean */
+	overflow: hidden;
+}
+
+/* --- Draggable Layers --- */
+.panel-item.draggable-layer {
+	background-color: var(--bg-item-draggable);
+	position: relative;
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.panel-item.draggable-layer.is-dragging {
+	opacity: 0.5;
+	border: 1px dashed var(--accent);
+	transform: scale(0.98);
+}
+
+.drag-handle {
+	cursor: grab;
+	padding-right: 10px;
+	color: #666;
+	font-size: 1.2rem;
+	transition: color 0.2s;
+}
+
+.drag-handle:hover {
+	color: var(--text-main);
+}
+
+.drag-handle:active {
+	cursor: grabbing;
+	color: var(--accent);
+}
+
+.btn-remove {
+	color: #d94545;
+	cursor: pointer;
+	padding: 4px 8px;
+	font-weight: bold;
+	border-radius: 4px;
+	transition: background 0.2s;
+}
+
+.btn-remove:hover {
+	background: rgba(217, 69, 69, 0.1);
+}
+
+.btn-add {
+	background-color: var(--accent);
+	color: white;
+	border: none;
+	padding: 8px 12px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-weight: 600;
+	transition: background 0.2s;
+	font-size: 0.9rem;
+}
+
+.btn-add:hover {
+	background-color: var(--accent-hover);
+}
+
+/* --- Form Controls --- */
+.control-group {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	min-height: 24px;
+}
+
+.control-group label,
+.control-group p {
+	color: var(--text-muted);
+	margin: 0;
+	white-space: nowrap;
+	margin-right: 10px;
+	font-size: 0.85rem;
+}
+
+/* 1. Generic Inputs */
+input[type="text"],
+input[type="number"],
+select {
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+	color: white;
+	padding: 4px 6px;
+	border-radius: 3px;
+	font-size: 0.85rem;
+	transition: border-color 0.2s;
+	box-sizing: border-box;
+}
+
+input:focus,
+select:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+/* 2. Layout Logic: 60% width only for direct children */
+.control-group>input:not([type="checkbox"]),
+.control-group>select,
+.control-group>div {
+	width: 60%;
+}
+
+/* 3. Checkbox (Custom Style) */
+input[type="checkbox"] {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 16px !important;
+	height: 16px;
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+	border-radius: 3px;
+	cursor: pointer;
+	position: relative;
+	margin: 0;
+	margin-left: auto;
+	flex-grow: 0;
+}
+
+input[type="checkbox"]:checked {
+	background-color: var(--accent);
+	border-color: var(--accent);
+}
+
+input[type="checkbox"]:checked::after {
+	content: '✔';
+	font-size: 10px;
+	color: white;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+/* 4. Color Picker */
+input[type="color"] {
+	-webkit-appearance: none;
+	border: 1px solid var(--border);
+	padding: 0;
+	background: none;
+	height: 24px;
+	cursor: pointer;
+	overflow: hidden;
+	border-radius: 3px;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+	border: none;
+}
+
+/* 5. Vector Inputs (Nested inputs share space) */
+.control-group>div>input {
+	width: auto;
+	flex: 1;
+	min-width: 0;
+}
+
+/* --- Custom Sliders --- */
+.noise-slider {
+	-webkit-appearance: none;
+	width: 100%;
+	background: transparent;
+	height: 20px;
+	margin: 0;
+	cursor: pointer;
+	flex-grow: 1;
+	display: flex;
+	align-items: center;
+}
+
+.noise-slider:focus {
+	outline: none;
+}
+
+.noise-slider::-webkit-slider-runnable-track {
+	width: 100%;
+	height: 4px;
+	cursor: pointer;
+	background: #444;
+	border-radius: 2px;
+}
+
+.noise-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	height: 14px;
+	width: 14px;
+	border-radius: 50%;
+	background: #e0e0e0;
+	cursor: pointer;
+	margin-top: -5px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+	transition: transform 0.1s;
+}
+
+.noise-slider:hover::-webkit-slider-thumb {
+	transform: scale(1.1);
+	background: white;
+}
+
+/* Firefox Slider Support */
+.noise-slider::-moz-range-track {
+	width: 100%;
+	height: 4px;
+	cursor: pointer;
+	background: #444;
+	border-radius: 2px;
+}
+
+.noise-slider::-moz-range-thumb {
+	height: 14px;
+	width: 14px;
+	border: none;
+	border-radius: 50%;
+	background: #e0e0e0;
+	cursor: pointer;
+}
+
+/* Prevent number input next to slider from expanding */
+.control-group>div>input[type="number"]:not(:first-child) {
+	flex: 0 0 50px;
+	margin-left: 5px;
+}
+
+/* --- Gradient Editor --- */
+.gradient-editor {
+	position: relative;
+	height: 24px !important;
+	background: #333;
+	border: 1px solid var(--border);
+	border-radius: 4px;
+	cursor: crosshair;
+	box-sizing: border-box;
+	margin-top: 2px;
+	margin-bottom: 2px;
+}
+
+.gradient-preview {
+	width: 100%;
+	height: 100%;
+	border-radius: 3px;
+	pointer-events: none;
+}
+
+.gradient-thumb {
+	position: absolute;
+	top: -2px;
+	bottom: -2px;
+	width: 8px;
+	background: white;
+	border: 1px solid #000;
+	cursor: ew-resize;
+	transform: translateX(-50%);
+	border-radius: 1px;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+	z-index: 5;
+}
+
+.gradient-thumb:hover {
+	z-index: 10;
+	background: var(--accent);
+	border-color: white;
+}
+
+/* Hide the native color input used by gradient editor */
+.gradient-color-picker {
+	display: block;
+	width: 0 !important;
+	height: 0 !important;
+	opacity: 0;
+	position: absolute;
+	pointer-events: none;
+}
+
+
+.sidebar.collapsed {
+    width: 40px; /* Width when closed */
+}
+
+/* Hide specific elements when sidebar is collapsed */
+.sidebar.collapsed h2,
+.sidebar.collapsed hr,
+.sidebar.collapsed .stack-container {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    display: none; /* remove from flow */
+}
+
+/* --- Toggle Button Styling --- */
+.sidebar-toggle-btn {
     position: absolute;
-    top: 0;
-    left: 0;
-}
-
-.inputPadding {
-    flex-grow: 1;
-}
-
-.inputContainer {
-    width: 100%;
-    height: 100%;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
     display: flex;
-    flex-direction: row;
-    align-items: start;
-    position: absolute;
-    margin-left: auto;
-    margin-bottom: auto;
-}
-
-.sliderContainer {
-    display: flex;
-    flex-direction: row;
     align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: background 0.2s;
+}
+
+.sidebar-toggle-btn:hover {
+    background: var(--accent);
+    color: white;
+}
+
+/* Rotate the icon when collapsed */
+.sidebar.collapsed .sidebar-toggle-btn .icon {
+    transform: rotate(180deg);
+}
+
+/* Icon transition */
+.sidebar-toggle-btn .icon {
+    font-size: 12px;
+    transition: transform 0.3s ease;
 }

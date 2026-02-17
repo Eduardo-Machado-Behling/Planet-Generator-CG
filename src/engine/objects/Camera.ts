@@ -1,42 +1,69 @@
-import {Engine} from '../Engine.js';
-import {Quaternion, SquaredMatrix, Vector} from '../Math.js';
+import { Engine } from '../Engine.js';
+import { Quaternion, SquaredMatrix, Vector } from '../Math.js';
 
-import {GameObject} from './GameObject.js'
+import { GameObject } from './GameObject.js'
 
 export class Camera extends GameObject {
-  target: GameObject|null = null;
+	target: GameObject | null = null;
 
-  up = new Vector(3);
+	up = new Vector(3);
 
-  view = new SquaredMatrix(4);
-  proj: SquaredMatrix;
+	view = new SquaredMatrix(4);
+	proj: SquaredMatrix;
 
-  updateView = false;
+	constructor(proj: SquaredMatrix) {
+		super();
 
-  constructor(proj: SquaredMatrix) {
-    super();
+		this.up.fill(0);
+		this.up.vec[1] = 1;
 
-    this.up.fill(0);
-    this.up.vec[1] = 1;
+		this.proj = proj;
+		this.view.Identity();
+	} update(gl: WebGL2RenderingContext, deltaTime: number): void { 
+	}
 
-    this.proj = proj;
-    this.view.Identity();
-  }
+	updateViewTarget(target: Vector) {
+		const eyePos = this.world.translation;
 
-  setup(gl: WebGL2RenderingContext, program: WebGLProgram) {
-    if (this.target) {
-      let pos = this.rotation.apply(this.translation);
-      this.view =
-          SquaredMatrix.MakeLookAt(pos, this.target.translation, this.up);
-    } else {
-      this.view = SquaredMatrix.view(this.translation, this.rotation);
-    }
+		this.view =
+			SquaredMatrix.MakeLookAt(eyePos, target, this.up);
+	}
 
-    if (program) {
-      gl.uniformMatrix4fv(
-          gl.getUniformLocation(program, 'uView'), false, this.view.mat);
-      gl.uniformMatrix4fv(
-          gl.getUniformLocation(program, 'uProj'), false, this.proj.mat);
-    }
-  }
+	updateView() {
+		
+		
+		const world = this.worldMatrix;
+		const view = new SquaredMatrix(4);
+		view.mat.set(world.mat);
+		view.invert();
+		this.view = view;
+	}
+
+	updateMatrices(){
+		if (this.target) {
+			this.updateViewTarget(this.target.world.translation);
+		} else {
+			this.updateView();
+		}
+	}
+
+	setup(gl: WebGL2RenderingContext, program: WebGLProgram) {
+		
+		this.updateMatrices()
+
+		if (program) {
+			gl.uniformMatrix4fv(
+				gl.getUniformLocation(program, 'uView'), false, this.view.mat);
+
+			gl.uniform3fv(
+				gl.getUniformLocation(program, 'viewPos'), this.world.translation.vec);
+
+			gl.uniformMatrix4fv(
+				gl.getUniformLocation(program, 'uProj'), false, this.proj.mat);
+		}
+	}
+
+	getLightView(): SquaredMatrix {
+		return SquaredMatrix.multiply(this.proj, this.view);
+	}
 };

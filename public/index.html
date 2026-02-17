@@ -4,8 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minimal TS Static Page</title>
+    <meta name="10ten-ja-reader" content="disabled">
+    <meta name="translate" content="no">
+    <title>Planet Generator</title>
 
+
+    <link rel="icon" type="image/png" href="/assets/images/favicon.png">
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -15,12 +19,15 @@
     <script type="module" src="./js/app.js"></script>
     <script src="https://webgl2fundamentals.org/webgl/resources/webgl-utils.js"></script>
 
-    <div class="inputContainer">
-        <div class="inputPadding"></div>
-        <div class="sliderContainer" id="sphereRes">
-            <p>Resulotion: </p>
-            <input class="Slider" type="range" min="4" max="1024" value="30" onchange="main()" />
-            <output>30</output>
+    <div class="uiContainer">
+        <div class="sidebar">
+            <h2 style="margin: 0">Configuration:</h2>
+
+
+            <hr style="border: 0; border-top: 1px solid var(--border); margin: 15px 0; width: 100%;">
+
+            <div id="stack-container" class="stack-container"></div>
+            <!-- <button id="add-layer-btn" class="btn-add">+ Add Noise Layer</button> -->
         </div>
     </div>
 
