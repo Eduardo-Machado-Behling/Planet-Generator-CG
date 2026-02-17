@@ -1,4 +1,4 @@
-import {BlendMode} from '../VisualNoises.js';
+import { BlendMode } from "../VisualNoises.js";
 
 export interface NoiseLayer {
   id: string;
@@ -7,8 +7,5 @@ export interface NoiseLayer {
   enabled: boolean;
   blendMode: BlendMode;
 
-  
   params: Record<string, number>;
-  
-  
 }

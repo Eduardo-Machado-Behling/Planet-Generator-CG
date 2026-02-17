@@ -1,225 +1,223 @@
-import { Quaternion, SquaredMatrix, Vector } from '../Math.js';
+import { Quaternion, SquaredMatrix, Vector } from "../Math.js";
 
 export class IDManager {
-	private static instance = new IDManager();
+  private static instance = new IDManager();
 
-	private idToObject = new Map<number, GameObject>();
+  private idToObject = new Map<number, GameObject>();
 
-	private nextPickID = 1;
+  private nextPickID = 1;
 
-	private freeIds: number[] = [];
+  private freeIds: number[] = [];
 
-	static get() { return this.instance; }
+  static get() {
+    return this.instance;
+  }
 
-	register(go: GameObject): number {
-		let id: number;
+  register(go: GameObject): number {
+    let id: number;
 
-		if (this.freeIds.length > 0) {
-			id = this.freeIds.pop()!;
-		} else {
-			id = this.nextPickID++;
-		}
+    if (this.freeIds.length > 0) {
+      id = this.freeIds.pop()!;
+    } else {
+      id = this.nextPickID++;
+    }
 
-		this.idToObject.set(id, go);
-		return id;
-	}
+    this.idToObject.set(id, go);
+    return id;
+  }
 
-	unregister(id: number) {
-		this.idToObject.delete(id);
+  unregister(id: number) {
+    this.idToObject.delete(id);
 
-		this.freeIds.push(id);
-	}
+    this.freeIds.push(id);
+  }
 
-	getObject(pickID: number): GameObject | undefined {
-		return this.idToObject.get(pickID);
-	}
+  getObject(pickID: number): GameObject | undefined {
+    return this.idToObject.get(pickID);
+  }
 }
 
 export class Transform {
-	_translation: Vector = new Vector(3).fill(0);
-	_scale: Vector = new Vector(3).fill(1);
-	_rotation: Quaternion = new Quaternion();
-	dirty: boolean = false;
+  _translation: Vector = new Vector(3).fill(0);
+  _scale: Vector = new Vector(3).fill(1);
+  _rotation: Quaternion = new Quaternion();
+  dirty: boolean = false;
 
-	get translation(): Vector {
-		return this._translation;
-	}
-	get scale(): Vector {
-		return this._scale;
-	}
-	get rotation(): Quaternion {
-		return this._rotation;
-	}
+  get translation(): Vector {
+    return this._translation;
+  }
+  get scale(): Vector {
+    return this._scale;
+  }
+  get rotation(): Quaternion {
+    return this._rotation;
+  }
 
-	set translation(trans: Vector) {
-		this._translation = trans;
-		this.dirty = true;
-	}
-	set scale(scale: Vector) {
-		this._scale = scale;
-		this.dirty = true;
-	}
-	set rotation(q: Quaternion) {
-		this._rotation = q;
-		this.dirty = true;
-	}
+  set translation(trans: Vector) {
+    this._translation = trans;
+    this.dirty = true;
+  }
+  set scale(scale: Vector) {
+    this._scale = scale;
+    this.dirty = true;
+  }
+  set rotation(q: Quaternion) {
+    this._rotation = q;
+    this.dirty = true;
+  }
 }
 
 type UpdateCallback = (gl: WebGL2RenderingContext, dt: number) => void;
 export class GameObject {
-	local: Transform = new Transform()
-	world: Transform = new Transform()
-	name: string = ""
-	enabled: boolean = true;
+  local: Transform = new Transform();
+  world: Transform = new Transform();
+  name: string = "";
+  enabled: boolean = true;
 
-	private _uuid: string;
-	private _pickId: number;
-	private parent: GameObject | null = null;
+  private _uuid: string;
+  private _pickId: number;
+  private parent: GameObject | null = null;
 
-	dirty: boolean = false;
+  dirty: boolean = false;
 
-	get uuid() {
-		return this._uuid;
-	}
+  get uuid() {
+    return this._uuid;
+  }
 
-	get pickId() {
-		return this._pickId
-	}
+  get pickId() {
+    return this._pickId;
+  }
 
-	localMatrix: SquaredMatrix;
-	worldMatrix: SquaredMatrix;
-	children: Array<GameObject>;
+  localMatrix: SquaredMatrix;
+  worldMatrix: SquaredMatrix;
+  children: Array<GameObject>;
 
-	updates: Array<UpdateCallback> = [];
+  updates: Array<UpdateCallback> = [];
 
-	constructor(name: string = "") {
+  constructor(name: string = "") {
+    this.localMatrix = new SquaredMatrix(4).Identity();
+    this.worldMatrix = new SquaredMatrix(4).Identity();
+    this.children = new Array<GameObject>();
 
-		this.localMatrix = new SquaredMatrix(4).Identity();
-		this.worldMatrix = new SquaredMatrix(4).Identity();
-		this.children = new Array<GameObject>();
+    this._uuid = crypto.randomUUID();
+    this._pickId = IDManager.get().register(this);
 
-		this._uuid = crypto.randomUUID();
-		this._pickId = IDManager.get().register(this);
+    if (name) {
+      this.name = name;
+    } else {
+      this.name = `${this._uuid}: GO`;
+    }
+  }
 
-		if (name) {
-			this.name = name
-		} else {
-			this.name = `${this._uuid}: GO`
-		}
-	}
+  destroy() {
+    IDManager.get().unregister(this.pickId);
 
-	destroy() {
-		IDManager.get().unregister(this.pickId);
+    if (this.parent) {
+      const index = this.parent.children.indexOf(this);
+      if (index !== -1) {
+        this.parent.children.splice(index, 1);
+      }
+    }
+  }
 
-		if (this.parent) {
-			const index = this.parent.children.indexOf(this);
-			if (index !== -1) {
-				this.parent.children.splice(index, 1);
-			}
-		}
-	}
+  setParent(newParent: GameObject) {
+    if (this.parent) {
+      const index = this.parent.children.indexOf(this);
+      if (index !== -1) {
+        this.parent.children.splice(index, 1);
+      }
+    }
 
+    this.parent = newParent;
 
+    newParent.children.push(this);
+  }
 
-	setParent(newParent: GameObject) {
-		if (this.parent) {
-			const index = this.parent.children.indexOf(this);
-			if (index !== -1) {
-				this.parent.children.splice(index, 1);
-			}
-		}
+  setFirstParent(newParent: GameObject) {
+    if (this.parent) {
+      const index = this.parent.children.indexOf(this);
+      if (index !== -1) {
+        this.parent.children.splice(index, 1);
+      }
+    }
 
-		this.parent = newParent;
+    this.parent = newParent;
+    newParent.children.unshift(this);
+  }
 
-		newParent.children.push(this);
-	}
+  debug = 10;
+  computeWorldMatrix(
+    parentWorldMatrix: SquaredMatrix = new SquaredMatrix(4).Identity(),
+  ) {
+    if (this.local.dirty) {
+      this.computeLocalMatrix();
 
-	setFirstParent(newParent: GameObject) {
-		if (this.parent) {
-			const index = this.parent.children.indexOf(this);
-			if (index !== -1) {
-				this.parent.children.splice(index, 1);
-			}
-		}
+      this.local.dirty = false;
+    }
 
-		this.parent = newParent;
-		newParent.children.unshift(this);
-	}
+    let worldMatrix = SquaredMatrix.multiply(
+      this.localMatrix,
+      parentWorldMatrix,
+    );
 
-	debug = 10;
-	computeWorldMatrix(
-		parentWorldMatrix: SquaredMatrix = new SquaredMatrix(4).Identity()) {
-		if (this.local.dirty) {
-			this.computeLocalMatrix();
+    this.world.translation = Vector.Vec([
+      worldMatrix.mat[12],
+      worldMatrix.mat[13],
+      worldMatrix.mat[14],
+    ]);
 
+    if (this.debug) {
+      console.log(`${this.name}: pos = ${this.world.translation.vec}`);
+      this.debug -= 1;
+    }
 
-			this.local.dirty = false;
-		}
+    this.worldMatrix = worldMatrix;
+    return this.worldMatrix;
+  }
 
-		let worldMatrix =
-			SquaredMatrix.multiply(this.localMatrix, parentWorldMatrix);
+  computeLocalMatrix() {
+    this.localMatrix = SquaredMatrix.scaling(this.local.scale);
+    this.localMatrix.transform(SquaredMatrix.rotation(this.local.rotation));
+    this.localMatrix.transform(
+      SquaredMatrix.translation(this.local.translation),
+    );
+  }
 
-		this.world.translation = Vector.Vec([
-			worldMatrix.mat[12],
-			worldMatrix.mat[13],
-			worldMatrix.mat[14]
-		]);
+  start(gl: WebGL2RenderingContext) {}
+  update(gl: WebGL2RenderingContext, deltaTime: number) {
+    this.updates.forEach((callback) => {
+      callback(gl, deltaTime);
+    });
 
+    for (const child of this.children) {
+      child.update(gl, deltaTime);
+    }
+  }
+  async lightPass(gl: WebGL2RenderingContext, program: WebGLProgram) {
+    for (const child of this.children) {
+      await child.lightPass(gl, program);
+    }
+  }
 
-		if (this.debug) {
-			console.log(`${this.name}: pos = ${this.world.translation.vec}`)
-			this.debug -= 1;
-		}
+  async draw(gl: WebGL2RenderingContext) {}
 
+  computeWorld(worldMatrix = new SquaredMatrix(4).Identity()) {
+    worldMatrix = this.computeWorldMatrix(worldMatrix);
 
-		this.worldMatrix = worldMatrix;
-		return this.worldMatrix;
-	}
+    for (const child of this.children) {
+      child.computeWorld(worldMatrix);
+    }
+  }
 
-	computeLocalMatrix() {
-		this.localMatrix = SquaredMatrix.scaling(this.local.scale);
-		this.localMatrix.transform(SquaredMatrix.rotation(this.local.rotation));
-		this.localMatrix.transform(SquaredMatrix.translation(this.local.translation));
-	}
+  async mainloop(
+    gl: WebGL2RenderingContext,
+    deltaTime: number,
+    worldMatrix = new SquaredMatrix(4).Identity(),
+  ) {
+    if (this.enabled) await this.draw(gl);
 
-
-	start(gl: WebGL2RenderingContext) { }
-	update(gl: WebGL2RenderingContext, deltaTime: number) {
-		this.updates.forEach(callback => {
-			callback(gl, deltaTime);
-		});
-
-		for (const child of this.children) {
-			child.update(gl, deltaTime);
-		}
-
-	}
-	async lightPass(gl: WebGL2RenderingContext, program: WebGLProgram) {
-		for (const child of this.children) {
-			await child.lightPass(gl, program);
-		}
-	}
-
-	async draw(gl: WebGL2RenderingContext) { }
-
-	computeWorld(worldMatrix = new SquaredMatrix(4).Identity()) {
-		worldMatrix = this.computeWorldMatrix(worldMatrix);
-
-		for (const child of this.children) {
-			child.computeWorld(worldMatrix);
-		}
-	}
-
-
-	async mainloop(
-		gl: WebGL2RenderingContext, deltaTime: number,
-		worldMatrix = new SquaredMatrix(4).Identity()) {
-
-		if (this.enabled)
-			await this.draw(gl);
-
-		for (const child of this.children) {
-			await child.mainloop(gl, deltaTime, worldMatrix);
-		}
-	}
+    for (const child of this.children) {
+      await child.mainloop(gl, deltaTime, worldMatrix);
+    }
+  }
 }

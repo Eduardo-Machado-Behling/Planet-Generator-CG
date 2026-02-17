@@ -27,6 +27,5 @@ void main() {
 
   vOutUV = vec2(fraction, aV);
 
-  
   gl_Position = vec4(0.0);
 }

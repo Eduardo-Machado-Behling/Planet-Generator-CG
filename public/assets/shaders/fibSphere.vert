@@ -24,6 +24,5 @@ void main() {
   vOutNormal = vec3(x, y, z);
   vOutPos = vOutNormal * uRadius;
 
-  
   gl_Position = vec4(0.0);
 }

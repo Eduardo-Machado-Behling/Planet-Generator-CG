@@ -4,7 +4,6 @@ precision highp float;
 out vec4 FragColor;
 in vec2 vUV;
 
-
 struct NoiseLayer {
   float scale;
   int octaves;
@@ -13,22 +12,17 @@ struct NoiseLayer {
   float multiplier;
   float seed;
   float height;
-  float minValue; 
+  float minValue;
 
   int enabled;
-  int noiseType; 
-  int blendMode; 
+  int noiseType;
+  int blendMode;
 };
 
 uniform int noiseAmount;
 uniform NoiseLayer uNoises[32];
 
 const float PI = 3.14159265359;
-
-
-
-
-
 
 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
 vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
@@ -83,8 +77,6 @@ float snoise(vec3 v) {
          dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
-
-
 float rigidNoise(vec3 x, int octaves, float lacunarity, float persistence,
                  float scale, float weightMultiplier) {
   float value = 0.0;
@@ -94,12 +86,11 @@ float rigidNoise(vec3 x, int octaves, float lacunarity, float persistence,
 
   for (int i = 0; i < octaves; i++) {
     float n = 1.0 - abs(snoise(x * frequency));
-    n = n * n; 
+    n = n * n;
     n *= weight;
 
     value += n * amplitude;
 
-    
     weight = n * weightMultiplier;
     weight = clamp(weight, 0.0, 1.0);
 
@@ -124,17 +115,16 @@ float fbm(vec3 x, int octaves, float lacunarity, float persistence,
   float value = 0.0;
   float amplitude = 1.0;
   float frequency = scale;
-  float maxAmplitude = 0.0; 
+  float maxAmplitude = 0.0;
 
   for (int i = 0; i < octaves; i++) {
     value += amplitude * snoise(x * frequency);
-    maxAmplitude += amplitude; 
+    maxAmplitude += amplitude;
 
     frequency *= lacunarity;
     amplitude *= persistence;
   }
 
-  
   return value / maxAmplitude;
 }
 
@@ -146,35 +136,24 @@ vec3 domainWarp(vec3 pos, float amount) {
   return pos + offset;
 }
 
-
 float evaluateLayer(NoiseLayer p, vec3 pos) {
-  
   vec3 warpedPos = domainWarp(pos, 0.1);
   vec3 seededPos = warpedPos + vec3(p.seed * 1000.0);
 
   float rawValue = 0.0;
 
-  
   if (p.noiseType == 0) {
-    
-    
     float v = fbm(seededPos, p.octaves, p.lacunarity, p.persistence, p.scale);
 
-    
     float normalized = (v + 1.0) * 0.5;
 
-    
-    
     rawValue = max(0.0, normalized - p.minValue);
   }
 
-  
   else if (p.noiseType == 1) {
-    
     float v = rigidNoise(seededPos, p.octaves, p.lacunarity, p.persistence,
                          p.scale, p.multiplier);
 
-    
     rawValue = max(0.0, v - p.minValue);
   }
 
@@ -186,7 +165,6 @@ void main() {
 
   float finalHeight = 0.0;
 
-  
   float mask = 0.0;
 
   for (int i = 0; i < noiseAmount; i++) {
@@ -196,25 +174,16 @@ void main() {
     float value = evaluateLayer(uNoises[i], pos);
 
     if (uNoises[i].blendMode == 0) {
-      
       finalHeight += value;
 
-      
-      
       mask = finalHeight;
     } else if (uNoises[i].blendMode == 1) {
-      
-      
-      
-      
       float maskStrength = (mask > 0.0) ? 1.0 : 0.0;
 
       finalHeight += value * maskStrength;
     } else if (uNoises[i].blendMode == 2) {
-      
       finalHeight = max(finalHeight, value);
     } else if (uNoises[i].blendMode == 3) {
-      
       finalHeight *= (1.0 + value);
     }
   }

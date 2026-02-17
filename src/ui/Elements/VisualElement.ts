@@ -9,6 +9,5 @@ export interface VisualElement<T = any> {
   set value(v: T);
   toJSON?(): any;
 
-
   description?: string;
 }
