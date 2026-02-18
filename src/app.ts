@@ -61,7 +61,7 @@ async function main() {
 
   let globalPos = engine.camera.local.translation;
   let planetPos = engine.camera.local.translation;
-  let rel = state.global.cameraRelativePlanet.value;
+  let rel = state.global.focusOnPlanet.value;
   state.global.cameraPosition.subscribe((vec) => {
     if (engine.camera) {
       engine.camera.local.translation = Vector.Vec3(vec);
@@ -95,7 +95,7 @@ async function main() {
   };
 
   relCall(rel);
-  state.global.cameraRelativePlanet.subscribe(relCall);
+  state.global.focusOnPlanet.subscribe(relCall);
 
   let then = 0;
   let cameraAngle = 0;
